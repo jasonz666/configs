@@ -56,9 +56,15 @@ path=$(sudo find / -name '*autojump.sh*'); check_ok "ERROR: can't find autojump.
 echo "[[ -s $path ]] && . $path" >> ~/.zshrc
 sed -i 's/ZSH_THEME=.*/ZSH_THEME="bira"/g' ~/.zshrc
 sed -i 's/^plugins=(git)/plugins=(git autojump)/g' ~/.zshrc
+
 # change login user prompt
 wget https://raw.githubusercontent.com/jasonz666/my-configs/master/.zsh_bira_theme_ps1.txt
 check_ok "ERROR: download PS1 file failed!"
+if [[ $(whoami) == "root" ]]; then
+    grep -A2 '# root' .zsh_bira_theme_ps1.txt >> ~/.zshrc
+else
+    grep -A2 '# normal' .zsh_bira_theme_ps1.txt >> ~/.zshrc
+fi
 cat .zsh_bira_theme_ps1.txt >> ~/.zshrc
 succ_info "set alias, autojump-plugin and zsh-theme complete!"
 

@@ -1,2 +1,7 @@
+# root
+export PS1='╭─%{$terminfo[bold]$fg[red]%}%n@%m%{$reset_color%} %{$terminfo[bold]$fg[blue]%} %~%{$reset_color%}  $(git_prompt_info)%{$reset_color%}
+╰─%B%#%b '
+
+# normal
 export PS1='╭─%{$terminfo[bold]$fg[green]%}%n@%m%{$reset_color%} %{$terminfo[bold]$fg[blue]%} %~%{$reset_color%}  $(git_prompt_info)%{$reset_color%}
 ╰─%B%#%b '
