@@ -65,7 +65,6 @@ if [[ $(whoami) == "root" ]]; then
 else
     grep -A2 '# normal' .zsh_bira_theme_ps1.txt >> ~/.zshrc
 fi
-cat .zsh_bira_theme_ps1.txt >> ~/.zshrc
 succ_info "set alias, autojump-plugin and zsh-theme complete!"
 
 # change sh
