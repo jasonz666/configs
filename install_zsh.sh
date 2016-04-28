@@ -52,7 +52,7 @@ alias cp='cp -i'
 alias rm='rm -i'
 alias sudo='sudo '
 EOF
-path=$(sudo find / -name '*autojump.sh*'); check_ok "ERROR: can't find autojump.sh!"
+path=$(sudo find / -name '*autojump.sh*' 2>/dev/null |grep 'autojump.sh'); check_ok "ERROR: can't find autojump.sh!"
 echo "[[ -s $path ]] && . $path" >> ~/.zshrc
 sed -i 's/ZSH_THEME=.*/ZSH_THEME="bira"/g' ~/.zshrc
 sed -i 's/^plugins=(git)/plugins=(git autojump)/g' ~/.zshrc
