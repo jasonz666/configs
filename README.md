@@ -1,2 +1,2 @@
-# my-configs
-any config files or scripts for *nix using.
+# configs
+All config files or scripts for linux using.
