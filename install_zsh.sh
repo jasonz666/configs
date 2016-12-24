@@ -58,7 +58,7 @@ sed -i 's/ZSH_THEME=.*/ZSH_THEME="bira"/g' ~/.zshrc
 sed -i 's/^plugins=(git)/plugins=(git autojump)/g' ~/.zshrc
 
 # change login user prompt
-wget https://raw.githubusercontent.com/jasonz666/my-configs/master/.zsh_bira_theme_ps1.txt
+wget -t5 https://raw.githubusercontent.com/jasonz666/configs/master/.zsh_bira_theme_ps1.txt
 check_ok "ERROR: download PS1 file failed!"
 if [[ $(whoami) == "root" ]]; then
     grep -A2 '# root' .zsh_bira_theme_ps1.txt >> ~/.zshrc
