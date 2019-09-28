@@ -3,6 +3,7 @@ set tabstop=4 shiftwidth=4 softtabstop=4 expandtab
 set showcmd
 set incsearch
 set hlsearch
+set cursorline
 
 " Bash style cmd-line auto-completion
 set wildmode=longest,list
