@@ -1,0 +1,8 @@
+# .gitignore
+
+# ignore some tmp files.
+test.sh
+result
+*.swp
+*.backup
+*.tmp

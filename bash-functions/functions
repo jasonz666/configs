@@ -1,0 +1,238 @@
+####################################################
+# functions
+# bash 脚本使用的函数库
+# 在其他脚本中运行 source ./functions 导入这里的函数
+####################################################
+
+## 检查命令执行的返回值
+## 执行失败直接退出
+is_cmd_ok() {
+    # $1 调用者脚本名
+    # $2 此函数执行处的行号
+    # 一般这二个实参值为：$0 $LINENO
+    if [ $? -ne 0 ]; then
+        echo "script $1: line $2: command execute failed" 1>&2
+        exit 3
+    fi
+}
+
+## 检查命令是否存在 如果命令不是 bash 内置命令的话
+## 参数1：命令名称
+is_cmd_exist() {
+    # type 是 bash 内置命令
+    # 用它判断其他命令是否存在不会出问题
+    if ! type $1 >/dev/null 2>&1; then
+        echo "$1: Command not found." 1>&2
+        # 执行函数库的函数失败时 退出码3
+        exit 3
+    else
+        return 0
+    fi
+}
+
+## 绝对路径判断函数
+## 参数1：路径字符串
+is_abs_path() {
+    is_cmd_exist grep
+    if ! echo "$1" | grep -q '^/'; then
+        return 1
+    fi
+}
+
+## 判断字符串是否为整数
+## 参数1: 字符串
+is_num() {
+    is_cmd_exist sed
+    local tmp="$(echo "$1" | sed 's/[0-9]//g')"
+    if [ "$tmp" == "" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+## 检查当前登入是 root
+## 参数1：调用该函数的脚本名
+is_root_login() {
+    is_cmd_exist id
+    if ! id | grep -q 'uid=0'; then
+        echo_err_info "$1: 必须以 root 用户运行，函数退出"
+        exit 3
+    else
+        echo_time_normal "$1: 正在以 root 运行 ..."
+    fi
+}
+
+## 替换字符串中的特殊字符
+## 如果字符串作为 Linux 下的文件或目录名
+## 就非常有必要替换掉其中的 shell 特殊符号
+## 参数1：字符串
+str_to_normal() {
+    # 下面规则会把特殊符合包括空格替换为英文下划线
+    # 把尖括号，小括号，中括号，花括号替换为双下划线
+    # \x27 在 sed 中表示单引号的十六进制值
+    is_cmd_exist sed
+    echo "$1" | sed 's/[ #/;",`:!*?$@&|+=%~^]/_/g' | sed 's/\x27/_/g' | sed 's/[{[(<]/__/g' | sed 's/[})>]/__/g' | sed 's/]/__/g'
+}
+
+## 带时间的 echo 显示 主要用于显示提示信息
+## 参数1：要显示的字符串
+echo_time_normal() {
+    local now_t="[$(date '+%F %T')] INFO: "
+    echo $now_t "$1"
+}
+
+## 输出错误信息
+## 参数1：要显示的字符串
+echo_err_info() {
+    echo "ERROR: $1" 1>&2
+}
+
+## 带时间的 echo 显示 高亮绿色 主要用于显示提示信息
+## 参数1：要显示的字符串
+echo_time_green() {
+    local now_t="[$(date '+%F %T')] INFO: "
+    echo -e $now_t "\e[1;32m$1\e[0m"
+}
+
+## 带时间的 echo 显示 高亮红色 主要用于显示提示信息
+## 参数1：要显示的字符串
+echo_time_red() {
+    local now_t="[$(date '+%F %T')] INFO: "
+    echo -e $now_t "\e[1;31m$1\e[0m"
+}
+
+## 返回文件或目录所在分区的剩余空间(MB)
+## 参数1: 目录或文件的绝对路径
+part_available() {
+    is_cmd_exist df
+    is_cmd_exist grep
+    is_cmd_exist awk
+    df -m "$1" | awk '{print $4}' | grep '^[0-9]'
+}
+
+## CentOS 6/7 函数
+## 检查是否安装 epel 扩展源 如果没有就安装
+chk_epel_exist() {
+    is_cmd_exist yum
+    if ! yum repolist | grep -q epel; then
+        yum install -y epel-release >/dev/null 2>&1
+    fi
+}
+
+## 信号处理函数
+## 用于 Ctrl+C 退出脚本时 删除未成功删除的文件目录
+## 参数1：调用脚本所在绝对路径 script_path
+del_file_dir() {
+    is_cmd_exist rm
+    if [ -z "$1" ]; then
+        echo "$0: var 'script_path' is empty, function EXIT"
+        exit 3
+    fi
+
+    script_path="$1"
+    del_log="$script_path"/logs/del-list.log
+
+    if [ ! -f "$script_path"/configs/del-list.txt ]; then
+        echo "$0: del-list.txt: File not found. function EXIT."
+        exit 3
+    else
+        > "$del_log"
+    fi
+
+    is_cmd_exist grep
+    is_cmd_exist rm
+    while read -r line; do
+        if echo "$line" | grep -q '^\.'; then
+            \rm "$script_path"/"$line" >> "$del_log" 2>&1
+        fi
+        if echo "$line" | grep -q '^/'; then
+            \rm "$line" >> "$del_log" 2>&1
+        fi
+    done < "$script_path"/configs/del-list.txt 
+}
+
+## 版本号比较函数
+## 参数1：版本号1，形如 1.10.33
+## 参数2：版本号2，格式同版本号1
+## 如果版本号1大于版本号2，返回1
+## 小于则返回-1
+## 等于则返回0
+cmp_ver_num() {
+    local ver1[1]=
+    local ver2[1]=
+    local ret="0"
+    local ver1_len="0"
+    local ver2_len="0"
+    local arr_len=0
+    is_cmd_exist cut
+    is_cmd_exist seq
+    is_cmd_exist bc
+    is_cmd_exist grep
+    if [ "$1" == "" -o "$2" == "" ]; then
+        echo "0"
+        return
+    fi
+    if ! echo "$1" | grep -q '\.' || ! echo "$2" | grep -q '\.'; then
+        local n1=$(echo "$1" | cut -d'.' -f1)
+        local n2=$(echo "$2" | cut -d'.' -f1)
+        if [ $n1 -gt $n2 ]; then
+            echo "1"
+        elif [ $n1 -lt $n2 ]; then
+            echo "-1"
+        else
+            echo "0"
+        fi
+        return
+    fi
+    for i in `seq 1 20`; do
+        ver1[$i]=$(echo "$1" | cut -d'.' -f"$i")
+        ver2[$i]=$(echo "$2" | cut -d'.' -f"$i")
+        if [ "${ver1[$i]}" == "" ]; then
+            ver1_len=$(($i-1))
+            break
+        fi
+        if [ "${ver2[$i]}" == "" ]; then
+            ver2_len=$(($i-1))
+            break
+        fi
+    done
+    if [ "$ver1_len" -gt 0 ]; then
+        arr_len="$ver1_len"
+    fi
+    if [ "$ver2_len" -gt 0 ]; then
+        arr_len="$ver2_len"
+    fi
+    for i in `seq 1 $arr_len`; do
+        if [ `echo "${ver1[$i]} > ${ver2[$i]}" | bc` -eq 1 ]; then
+            ret="1"
+            break
+        elif [ `echo "${ver1[$i]} < ${ver2[$i]}" | bc` -eq 1 ]; then
+            ret="-1"
+            break
+        else
+            continue
+        fi
+    done
+    echo "$ret"
+}
+
+## 获取脚本所在绝对路径
+get_script_abs_path() {
+
+# eval 执行字符串中的命令
+eval 'if [ "$0" == "-bash" ]; then
+    pwd
+else
+    echo "$( cd "`dirname $0`"; pwd )"
+fi'
+}
+
+## 获取脚本名
+get_script_name() {
+eval 'if [ "$0" == "-bash" ]; then
+    echo -n ""
+else
+    echo "$(basename $0)"
+fi'
+}
