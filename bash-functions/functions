@@ -1,8 +1,8 @@
-####################################################
+#####################################################
 # functions
 # bash 脚本使用的函数库
 # 在其他脚本中运行 source ./functions 导入这里的函数
-####################################################
+#####################################################
 
 ## 检查命令执行的返回值
 ## 执行失败直接退出
@@ -11,7 +11,7 @@ is_cmd_ok() {
     # $2 此函数执行处的行号
     # 一般这二个实参值为：$0 $LINENO
     if [ $? -ne 0 ]; then
-        echo "script $1: line $2: command execute failed" 1>&2
+        echo "script $1: line $2: Command execute failed." 1>&2
         exit 3
     fi
 }
@@ -56,10 +56,10 @@ is_num() {
 is_root_login() {
     is_cmd_exist id
     if ! id | grep -q 'uid=0'; then
-        echo_err_info "$1: 必须以 root 用户运行，函数退出"
+        echo_err_info "$1: Run me as root please, EXIT"
         exit 3
     else
-        echo_time_normal "$1: 正在以 root 运行 ..."
+        echo_time_normal "$1: I am running as root ..."
     fi
 }
 
@@ -68,7 +68,7 @@ is_root_login() {
 ## 就非常有必要替换掉其中的 shell 特殊符号
 ## 参数1：字符串
 str_to_normal() {
-    # 下面规则会把特殊符合包括空格替换为英文下划线
+    # 下面规则会把特殊符合包括空格、路径分隔符'/'替换为英文下划线
     # 把尖括号，小括号，中括号，花括号替换为双下划线
     # \x27 在 sed 中表示单引号的十六进制值
     is_cmd_exist sed
@@ -104,7 +104,7 @@ echo_time_red() {
 
 ## 返回文件或目录所在分区的剩余空间(MB)
 ## 参数1: 目录或文件的绝对路径
-part_available() {
+part_available_mb() {
     is_cmd_exist df
     is_cmd_exist grep
     is_cmd_exist awk
@@ -132,9 +132,10 @@ del_file_dir() {
 
     script_path="$1"
     del_log="$script_path"/logs/del-list.log
+    mkdir -p "$script_path"/logs
 
     if [ ! -f "$script_path"/configs/del-list.txt ]; then
-        echo "$0: del-list.txt: File not found. function EXIT."
+        echo "$0: ${script_path}/configs/del-list.txt: File not found. function EXIT."
         exit 3
     else
         > "$del_log"
